@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Flower Genome Reconstructor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: {
+                500: '#FF6B9D',
+                600: '#F34F89',
+                700: '#D83C7B'
+              },
+              plum: '#8B4A8B',
+              ink: '#4A2C4A'
+            },
+            boxShadow: {
+              glow: '0 10px 50px rgba(255, 107, 157, 0.35)'
+            }
+          }
+        }
+      };
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+        background: radial-gradient(circle at 15% 20%, rgba(255, 107, 157, 0.15), transparent 35%),
+          radial-gradient(circle at 85% 10%, rgba(139, 74, 139, 0.18), transparent 35%),
+          radial-gradient(circle at 50% 80%, rgba(74, 44, 74, 0.12), transparent 30%),
+          linear-gradient(135deg, #fff5fb 0%, #f9ecff 40%, #eef2ff 100%);
+        min-height: 100vh;
+        color: #1f0f25;
+      }
+      .glass {
+        backdrop-filter: blur(14px);
+        background: rgba(255, 255, 255, 0.75);
+        border: 1px solid rgba(255, 255, 255, 0.35);
+      }
+      .gradient-text {
+        background: linear-gradient(120deg, #ff6b9d, #8b4a8b);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        color: transparent;
+      }
+    </style>
+  </head>
+  <body class="antialiased">
+    <div id="root"></div>
+
+    <script type="text/babel">
+      const { useState, useRef } = React;
+      const { createRoot } = ReactDOM;
+
+      // Icon Components using SVG
+      const Icon = ({ children, size = 24, className = '', ...props }) => (
+        <svg
+          width={size}
+          height={size}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className={className}
+          {...props}
+        >
+          {children}
+        </svg>
+      );
+
+      const Upload = (props) => (
+        <Icon {...props}>
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+          <polyline points="17 8 12 3 7 8" />
+          <line x1="12" y1="3" x2="12" y2="15" />
+        </Icon>
+      );
+
+      const Sparkles = (props) => (
+        <Icon {...props}>
+          <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
+          <path d="M5 3v4" />
+          <path d="M19 17v4" />
+          <path d="M3 5h4" />
+          <path d="M17 19h4" />
+        </Icon>
+      );
+
+      const Flower2 = (props) => (
+        <Icon {...props}>
+          <path d="M12 5a3 3 0 1 1 3 3" />
+          <path d="M12 8a3 3 0 1 1-3 3" />
+          <path d="M12 11a3 3 0 1 1 3 3" />
+          <path d="M12 8a3 3 0 1 0-3 3" />
+          <path d="M12 5v3" />
+          <path d="M12 11v3" />
+          <path d="M12 8h3" />
+          <path d="M12 8H9" />
+          <circle cx="12" cy="8" r="2" />
+        </Icon>
+      );
+
+      const Droplets = (props) => (
+        <Icon {...props}>
+          <path d="M7 16.3c2.2 0 4-1.83 4-4.05 0-1.16-.57-2.26-1.71-3.19S7.29 6.75 7 5.3c-.29 1.45-1.14 2.84-2.29 3.76S3 11.1 3 12.25c0 2.22 1.8 4.05 4 4.05z" />
+          <path d="M12.56 6.6A10.97 10.97 0 0 0 14 3.02c.5 2.5 2 4.9 4 6.5s3 3.5 3 5.5a6.98 6.98 0 0 1-11.91 4.97" />
+        </Icon>
+      );
+
+      const Palette = (props) => (
+        <Icon {...props}>
+          <circle cx="13.5" cy="6.5" r=".5" />
+          <circle cx="17.5" cy="10.5" r=".5" />
+          <circle cx="8.5" cy="7.5" r=".5" />
+          <circle cx="6.5" cy="12.5" r=".5" />
+          <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z" />
+        </Icon>
+      );
+
+      const Beaker = (props) => (
+        <Icon {...props}>
+          <path d="M4.5 3h15" />
+          <path d="M6 3v12a6 6 0 0 0 12 0V3" />
+          <path d="M6 9h12" />
+          <path d="M6 15h12" />
+        </Icon>
+      );
+
+      const Scan = (props) => (
+        <Icon {...props}>
+          <path d="M3 7V5a2 2 0 0 1 2-2h2" />
+          <path d="M17 3h2a2 2 0 0 1 2 2v2" />
+          <path d="M21 17v2a2 2 0 0 1-2 2h-2" />
+          <path d="M7 21H5a2 2 0 0 1-2-2v-2" />
+          <line x1="7" y1="12" x2="17" y2="12" />
+        </Icon>
+      );
+
+      const Wand2 = (props) => (
+        <Icon {...props}>
+          <path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72Z" />
+          <path d="m14 7 3 3" />
+          <path d="M5 6v4" />
+          <path d="M19 14v4" />
+          <path d="M10 2v2" />
+          <path d="M7 8H3" />
+          <path d="M21 16h-4" />
+          <path d="M11 3H9" />
+        </Icon>
+      );
+
+      const Download = (props) => (
+        <Icon {...props}>
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+          <polyline points="7 10 12 15 17 10" />
+          <line x1="12" y1="15" x2="12" y2="3" />
+        </Icon>
+      );
+
+      const ArrowLeftRight = (props) => (
+        <Icon {...props}>
+          <path d="m16 3 4 4-4 4" />
+          <path d="M20 7H4" />
+          <path d="m8 21-4-4 4-4" />
+          <path d="M4 17h16" />
+        </Icon>
+      );
+
+      const RefreshCcw = (props) => (
+        <Icon {...props}>
+          <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+          <path d="M17 16v4h-4" />
+          <path d="M3 12a9 9 0 0 0 12.219 8.56" />
+          <path d="M7 8H3V4" />
+        </Icon>
+      );
+
+      const Sprout = (props) => (
+        <Icon {...props}>
+          <path d="M7 20h10" />
+          <path d="M10 20c5.5-2.5.8-6.4 3-10" />
+          <path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-1.8-1.8-2-3-.1-1 .4-2.5 1.6-3.7a10 10 0 0 1 3.5 3.3z" />
+          <path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.1-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.7 2z" />
+        </Icon>
+      );
+
+      const Recycle = (props) => (
+        <Icon {...props}>
+          <path d="M7 19H4.815a1.815 1.815 0 0 1-1.84-2.187l1.385-9A2 2 0 0 1 7.354 6h9.292a2 2 0 0 1 1.993 1.813l1.385 9A1.815 1.815 0 0 1 19.185 19H17" />
+          <path d="M9 12l2 2 4-4" />
+        </Icon>
+      );
+
+      const Candle = (props) => (
+        <Icon {...props}>
+          <line x1="12" y1="2" x2="12" y2="22" />
+          <line x1="12" y1="4" x2="14" y2="4" />
+          <line x1="12" y1="6" x2="13" y2="6" />
+          <line x1="12" y1="8" x2="14" y2="8" />
+          <path d="M10 20l2-2 2 2" />
+        </Icon>
+      );
+
+      const Leaf = (props) => (
+        <Icon {...props}>
+          <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z" />
+          <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12" />
+        </Icon>
+      );
+
+      const Package = (props) => (
+        <Icon {...props}>
+          <path d="m7.5 4.27 9 5.15" />
+          <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
+          <path d="m3.3 7 8.7 5 8.7-5" />
+          <path d="M12 22V12" />
+        </Icon>
+      );
+
+      const Scissors = (props) => (
+        <Icon {...props}>
+          <circle cx="6" cy="6" r="3" />
+          <circle cx="18" cy="6" r="3" />
+          <line x1="8" y1="12" x2="16" y2="12" />
+          <path d="M6 20h12" />
+        </Icon>
+      );
+
+      const Heart = (props) => (
+        <Icon {...props}>
+          <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.51 4.04 3 5.5l7 7Z" />
+        </Icon>
+      );
+
+      // Flower Database - All Flowers in the World
+      const flowerDatabase = {
+        rose: {
+          species: 'Rosa damascena (Damask Rose)',
+          colors: ['#FF6B9D', '#FFB5C5', '#FFF0F5', '#8B4A8B', '#4A2C4A'],
+          compounds: [
+            { name: 'Geraniol', value: 34.2 },
+            { name: 'Citronellol', value: 22.8 },
+            { name: 'Nerol', value: 18.5 },
+            { name: 'Linalool', value: 12.1 }
+          ],
+          notes: { top: 'Fresh / Citrus', middle: 'Rose / Floral', base: 'Woody / Musky' },
+          story: 'Born on ancient mountain terraces, this Damask rose once perfumed royal caravans. Now digitally restored, its petals remember dawn harvests, honeyed breezes, and the lullabies sung by gardeners who refused to let its lineage fade.',
+          usesBefore: [
+            { title: 'Rose Water Toner', icon: Droplets, description: 'Steep fresh petals in distilled water for 24 hours to create a natural facial toner that hydrates and soothes skin.', product: 'Rose Water Toner', color: 'from-pink-500/20 to-rose-500/20', iconColor: 'text-pink-600' },
+            { title: 'Hair Rinse', icon: Scissors, description: 'This flower can use for natural hair dye and conditioning. Boil petals to create a rose-infused hair rinse that adds shine and subtle pink tones to light hair.', product: 'Rose Hair Rinse', color: 'from-purple-500/20 to-pink-500/20', iconColor: 'text-purple-600' },
+            { title: 'Edible Petals', icon: Heart, description: 'Fresh petals are edible and perfect for salads, desserts, or cocktails. Add elegance and subtle flavor to culinary creations.', product: 'Edible Rose Petals', color: 'from-red-500/20 to-pink-500/20', iconColor: 'text-red-600' },
+            { title: 'Aromatherapy', icon: Sparkles, description: 'Place fresh roses in your space for natural aromatherapy. The scent reduces stress and promotes relaxation.', product: 'Fresh Rose Display', color: 'from-primary-500/20 to-plum/20', iconColor: 'text-primary-600' }
+          ],
+          usesAfter: [
+            { title: 'Rose Petal Hair Dye', icon: Scissors, description: 'This flower can use for hair dye! Create a natural pink-tinted hair dye by steeping dried petals in hot water and applying as a final rinse after shampooing.', product: 'Natural Hair Dye', color: 'from-purple-500/20 to-pink-500/20', iconColor: 'text-purple-600' },
+            { title: 'Potpourri', icon: Droplets, description: 'Mix dried petals with essential oils and spices to create fragrant potpourri that lasts for months.', product: 'Rose Potpourri', color: 'from-amber-500/20 to-orange-500/20', iconColor: 'text-amber-600' },
+            { title: 'Rose Oil Infusion', icon: Beaker, description: 'Infuse dried petals in carrier oils (jojoba, almond) for 4-6 weeks to create luxurious skincare oils for face, body, and hair.', product: 'Rose Infused Oil', color: 'from-pink-500/20 to-rose-500/20', iconColor: 'text-pink-600' },
+            { title: 'Rose Petal Face Mask', icon: Leaf, description: 'Grind dried petals into powder and mix with honey or yogurt for an anti-aging, hydrating face mask.', product: 'Rose Face Mask', color: 'from-emerald-500/20 to-teal-500/20', iconColor: 'text-emerald-600' },
+            { title: 'Rose Tea Blend', icon: Heart, description: 'Dry petals completely and blend with other herbs to create soothing, antioxidant-rich tea blends.', product: 'Rose Herbal Tea', color: 'from-red-500/20 to-pink-500/20', iconColor: 'text-red-600' },
+            { title: 'Natural Lip Balm', icon: Droplets, description: 'Steep dried petals in beeswax and coconut oil to create moisturizing, tinted lip balm with natural color.', product: 'Rose Lip Balm', color: 'from-pink-500/20 to-rose-500/20', iconColor: 'text-pink-600' }
+          ]
+        },
+        lavender: {
+          species: 'Lavandula angustifolia (English Lavender)',
+          colors: ['#967BB6', '#E6E6FA', '#DDA0DD', '#9370DB', '#663399'],
+          compounds: [
+            { name: 'Linalool', value: 45.3 },
+            { name: 'Linalyl Acetate', value: 28.7 },
+            { name: 'Camphor', value: 12.4 },
+            { name: 'Terpinen-4-ol', value: 8.2 }
+          ],
+          notes: { top: 'Fresh / Herbal', middle: 'Lavender / Floral', base: 'Woody / Earthy' },
+          story: 'Hailing from Mediterranean hillsides, this lavender once graced ancient Roman baths. Restored to digital life, its calming essence recalls moonlit fields where shepherds rested and poets found peace.',
+          usesBefore: [
+            { title: 'Lavender Sachets', icon: Package, description: 'Place fresh lavender bundles in linen sachets to naturally repel moths and add calming fragrance to drawers and closets.', product: 'Lavender Sachets', color: 'from-purple-500/20 to-indigo-500/20', iconColor: 'text-purple-600' },
+            { title: 'Hair Oil Treatment', icon: Scissors, description: 'This flower can use for hair treatment! Infuse fresh lavender in coconut oil for a natural hair growth serum and scalp treatment.', product: 'Lavender Hair Oil', color: 'from-purple-500/20 to-violet-500/20', iconColor: 'text-purple-600' },
+            { title: 'Culinary Herb', icon: Heart, description: 'Use fresh lavender flowers in baking, honey, or as a unique garnish. Pairs beautifully with lemon, honey, and chocolate.', product: 'Culinary Lavender', color: 'from-blue-500/20 to-purple-500/20', iconColor: 'text-blue-600' },
+            { title: 'Relaxation Bath', icon: Droplets, description: 'Add fresh lavender sprigs to your bath for a calming, stress-relieving experience that promotes better sleep.', product: 'Lavender Bath', color: 'from-indigo-500/20 to-purple-500/20', iconColor: 'text-indigo-600' }
+          ],
+          usesAfter: [
+            { title: 'Dried Lavender Hair Rinse', icon: Scissors, description: 'This flower can use for hair! Steep dried lavender in apple cider vinegar for a conditioning hair rinse that adds shine and reduces dandruff.', product: 'Lavender Hair Rinse', color: 'from-purple-500/20 to-violet-500/20', iconColor: 'text-purple-600' },
+            { title: 'Sleep Pillows', icon: Heart, description: 'Fill small pillows with dried lavender buds to create natural sleep aids that promote relaxation and better rest.', product: 'Lavender Sleep Pillows', color: 'from-indigo-500/20 to-purple-500/20', iconColor: 'text-indigo-600' },
+            { title: 'Essential Oil Extraction', icon: Beaker, description: 'Steam distill dried lavender flowers to extract essential oil for aromatherapy, skincare, and natural cleaning products.', product: 'Lavender Essential Oil', color: 'from-purple-500/20 to-indigo-500/20', iconColor: 'text-purple-600' },
+            { title: 'Herbal Tea', icon: Leaf, description: 'Brew dried lavender flowers into a calming herbal tea that helps with anxiety, insomnia, and digestive issues.', product: 'Lavender Tea', color: 'from-blue-500/20 to-purple-500/20', iconColor: 'text-blue-600' },
+            { title: 'Candles & Soaps', icon: Candle, description: 'Incorporate dried lavender buds into homemade candles and soaps for natural fragrance and decorative appeal.', product: 'Lavender Soaps', color: 'from-violet-500/20 to-purple-500/20', iconColor: 'text-violet-600' },
+            { title: 'Wound Healing Salve', icon: Droplets, description: 'Create a healing salve by infusing dried lavender in olive oil, then mixing with beeswax for cuts, burns, and skin irritations.', product: 'Lavender Healing Salve', color: 'from-emerald-500/20 to-teal-500/20', iconColor: 'text-emerald-600' }
+          ]
+        },
+        sunflower: {
+          species: 'Helianthus annuus (Sunflower)',
+          colors: ['#FFD700', '#FFA500', '#FF8C00', '#8B4513', '#654321'],
+          compounds: [
+            { name: 'Terpenoids', value: 38.5 },
+            { name: 'Phenolic Acids', value: 25.3 },
+            { name: 'Flavonoids', value: 18.7 },
+            { name: 'Carotenoids', value: 12.1 }
+          ],
+          notes: { top: 'Earthy / Nutty', middle: 'Sunny / Warm', base: 'Green / Vegetal' },
+          story: 'Born from the sun itself, this sunflower once tracked daylight across vast fields. Restored digitally, its golden face remembers harvest festivals, bird songs at dawn, and the promise of abundance.',
+          usesBefore: [
+            { title: 'Edible Seeds', icon: Heart, description: 'Harvest fresh seeds for roasting, snacking, or pressing into nutritious sunflower oil. Rich in vitamin E and healthy fats.', product: 'Sunflower Seeds', color: 'from-yellow-500/20 to-orange-500/20', iconColor: 'text-yellow-600' },
+            { title: 'Natural Dye', icon: Palette, description: 'This flower can use for natural dye! Use fresh petals to create vibrant yellow and orange dyes for fabrics and crafts.', product: 'Sunflower Dye', color: 'from-amber-500/20 to-orange-500/20', iconColor: 'text-amber-600' },
+            { title: 'Pollinator Garden', icon: Sprout, description: 'Fresh sunflowers attract bees, butterflies, and birds, creating a thriving ecosystem in your garden.', product: 'Pollinator Attractor', color: 'from-green-500/20 to-yellow-500/20', iconColor: 'text-green-600' },
+            { title: 'Cut Flower Arrangements', icon: Flower2, description: 'Use fresh sunflowers in bouquets for a cheerful, long-lasting display that brightens any space.', product: 'Sunflower Bouquet', color: 'from-yellow-500/20 to-gold-500/20', iconColor: 'text-yellow-600' }
+          ],
+          usesAfter: [
+            { title: 'Seed Oil Production', icon: Droplets, description: 'This flower can use for oil! Press dried seeds to extract sunflower oil for cooking, skincare, and natural hair treatments.', product: 'Sunflower Oil', color: 'from-yellow-500/20 to-amber-500/20', iconColor: 'text-yellow-600' },
+            { title: 'Bird Feed', icon: Sprout, description: 'Dried sunflower heads make excellent natural bird feeders. Hang them in your garden to attract various bird species.', product: 'Bird Feeder', color: 'from-green-500/20 to-brown-500/20', iconColor: 'text-green-600' },
+            { title: 'Compost Material', icon: Recycle, description: 'Add dried sunflower stems and leaves to compost for nutrient-rich organic matter that improves soil quality.', product: 'Compost Material', color: 'from-amber-500/20 to-orange-500/20', iconColor: 'text-amber-600' },
+            { title: 'Natural Mulch', icon: Leaf, description: 'Shred dried sunflower stalks to create organic mulch that retains moisture and suppresses weeds in gardens.', product: 'Natural Mulch', color: 'from-brown-500/20 to-amber-500/20', iconColor: 'text-brown-600' },
+            { title: 'Craft Materials', icon: Wand2, description: 'Use dried sunflower petals and seeds in pressed flower art, wreaths, and decorative arrangements.', product: 'Craft Supplies', color: 'from-yellow-500/20 to-orange-500/20', iconColor: 'text-yellow-600' },
+            { title: 'Livestock Feed', icon: Heart, description: 'Dried sunflower meal (after oil extraction) provides high-protein feed for chickens, cattle, and other livestock.', product: 'Animal Feed', color: 'from-brown-500/20 to-amber-500/20', iconColor: 'text-brown-600' }
+          ]
+        },
+        marigold: {
+          species: 'Tagetes patula (Marigold)',
+          colors: ['#FFA500', '#FFD700', '#FF6347', '#8B4513', '#654321'],
+          compounds: [
+            { name: 'Lutein', value: 42.8 },
+            { name: 'Zeaxanthin', value: 28.3 },
+            { name: 'Quercetin', value: 15.6 },
+            { name: 'Beta-Carotene', value: 9.2 }
+          ],
+          notes: { top: 'Pungent / Spicy', middle: 'Herbal / Citrus', base: 'Earthy / Musky' },
+          story: 'From sacred ceremonies to healing gardens, this marigold has graced traditions worldwide. Digitally renewed, its vibrant orange remembers Day of the Dead altars, companion planting wisdom, and medicinal lore.',
+          usesBefore: [
+            { title: 'Natural Pest Repellent', icon: Leaf, description: 'Plant fresh marigolds near vegetables to naturally repel aphids, nematodes, and other garden pests with their strong scent.', product: 'Pest Repellent', color: 'from-orange-500/20 to-yellow-500/20', iconColor: 'text-orange-600' },
+            { title: 'Edible Flowers', icon: Heart, description: 'Use fresh marigold petals as edible garnish in salads, soups, and rice dishes. Adds color and mild citrus flavor.', product: 'Edible Marigolds', color: 'from-amber-500/20 to-orange-500/20', iconColor: 'text-amber-600' },
+            { title: 'Hair Color Enhancer', icon: Scissors, description: 'This flower can use for hair color! Rinse hair with fresh marigold tea to add golden highlights and shine to light-colored hair.', product: 'Marigold Hair Rinse', color: 'from-yellow-500/20 to-orange-500/20', iconColor: 'text-yellow-600' },
+            { title: 'Skin Toning', icon: Droplets, description: 'Apply fresh marigold petal paste to reduce inflammation, heal wounds, and improve skin tone naturally.', product: 'Marigold Face Mask', color: 'from-orange-500/20 to-red-500/20', iconColor: 'text-orange-600' }
+          ],
+          usesAfter: [
+            { title: 'Dried Marigold Hair Dye', icon: Scissors, description: 'This flower can use for hair dye! Steep dried petals to create a natural golden-yellow hair dye for highlights and color enhancement.', product: 'Natural Hair Dye', color: 'from-yellow-500/20 to-orange-500/20', iconColor: 'text-yellow-600' },
+            { title: 'Herbal Tea', icon: Leaf, description: 'Brew dried marigold flowers into a healing tea that aids digestion, reduces inflammation, and soothes stomach issues.', product: 'Marigold Tea', color: 'from-orange-500/20 to-amber-500/20', iconColor: 'text-orange-600' },
+            { title: 'Natural Fabric Dye', icon: Palette, description: 'Create vibrant yellow and orange fabric dyes from dried marigold petals. Perfect for natural textile coloring.', product: 'Marigold Fabric Dye', color: 'from-amber-500/20 to-orange-500/20', iconColor: 'text-amber-600' },
+            { title: 'Healing Ointment', icon: Beaker, description: 'Infuse dried marigold in oil to create calendula ointment for treating cuts, burns, rashes, and skin irritations.', product: 'Calendula Ointment', color: 'from-emerald-500/20 to-teal-500/20', iconColor: 'text-emerald-600' },
+            { title: 'Eye Health Supplements', icon: Heart, description: 'Dry and grind petals to make supplements rich in lutein and zeaxanthin, beneficial for eye health and vision.', product: 'Eye Health Capsules', color: 'from-blue-500/20 to-indigo-500/20', iconColor: 'text-blue-600' },
+            { title: 'Potpourri & Sachets', icon: Package, description: 'Mix dried marigold petals with other herbs to create fragrant potpourri and insect-repelling sachets.', product: 'Marigold Potpourri', color: 'from-orange-500/20 to-yellow-500/20', iconColor: 'text-orange-600' }
+          ]
+        },
+        hibiscus: {
+          species: 'Hibiscus rosa-sinensis (Hibiscus)',
+          colors: ['#FF1493', '#FF69B4', '#FFC0CB', '#DC143C', '#8B0000'],
+          compounds: [
+            { name: 'Anthocyanins', value: 38.9 },
+            { name: 'Flavonoids', value: 24.7 },
+            { name: 'Ascorbic Acid', value: 18.3 },
+            { name: 'Polyphenols', value: 13.8 }
+          ],
+          notes: { top: 'Tart / Fruity', middle: 'Floral / Sweet', base: 'Earthy / Spicy' },
+          story: 'Tropical elegance personified, this hibiscus once adorned Polynesian garlands and Caribbean gardens. Restored to digital glory, its vibrant petals remember island breezes, celebration leis, and traditional medicine.',
+          usesBefore: [
+            { title: 'Hibiscus Tea', icon: Leaf, description: 'Steep fresh hibiscus flowers to make tart, refreshing tea rich in vitamin C and antioxidants. Helps lower blood pressure naturally.', product: 'Hibiscus Tea', color: 'from-red-500/20 to-pink-500/20', iconColor: 'text-red-600' },
+            { title: 'Natural Hair Treatment', icon: Scissors, description: 'This flower can use for hair! Use fresh hibiscus paste as a natural conditioner that promotes hair growth and prevents dandruff.', product: 'Hibiscus Hair Mask', color: 'from-pink-500/20 to-red-500/20', iconColor: 'text-pink-600' },
+            { title: 'Edible Garnish', icon: Heart, description: 'Fresh hibiscus flowers are edible and perfect for salads, desserts, and cocktails. Adds vibrant color and tangy flavor.', product: 'Edible Hibiscus', color: 'from-rose-500/20 to-pink-500/20', iconColor: 'text-rose-600' },
+            { title: 'Natural Lip Stain', icon: Droplets, description: 'Crush fresh petals to create a natural, long-lasting lip stain with vibrant pink-red color and moisturizing properties.', product: 'Hibiscus Lip Stain', color: 'from-red-500/20 to-rose-500/20', iconColor: 'text-red-600' }
+          ],
+          usesAfter: [
+            { title: 'Dried Hibiscus Hair Dye', icon: Scissors, description: 'This flower can use for hair dye! Steep dried hibiscus to create a natural red-pink hair dye that conditions while coloring.', product: 'Natural Hair Dye', color: 'from-pink-500/20 to-red-500/20', iconColor: 'text-pink-600' },
+            { title: 'Herbal Tea Blend', icon: Leaf, description: 'Brew dried hibiscus flowers into a tangy, antioxidant-rich tea that supports heart health and aids weight management.', product: 'Hibiscus Herbal Tea', color: 'from-red-500/20 to-pink-500/20', iconColor: 'text-red-600' },
+            { title: 'Fabric Dye', icon: Palette, description: 'Create vibrant pink and red natural dyes from dried hibiscus petals for coloring fabrics, yarns, and paper.', product: 'Hibiscus Fabric Dye', color: 'from-rose-500/20 to-red-500/20', iconColor: 'text-rose-600' },
+            { title: 'Skin Care Serum', icon: Beaker, description: 'Infuse dried hibiscus in rosehip oil to create a vitamin C-rich serum that brightens skin and reduces dark spots.', product: 'Hibiscus Serum', color: 'from-pink-500/20 to-rose-500/20', iconColor: 'text-pink-600' },
+            { title: 'Jam & Syrup', icon: Heart, description: 'Make delicious hibiscus jam or syrup from dried flowers. Perfect for pancakes, cocktails, and desserts.', product: 'Hibiscus Jam', color: 'from-red-500/20 to-pink-500/20', iconColor: 'text-red-600' },
+            { title: 'Pressed Flower Art', icon: Wand2, description: 'Press dried hibiscus flowers to create stunning artwork, bookmarks, and decorative pieces that preserve their vibrant beauty.', product: 'Pressed Hibiscus Art', color: 'from-rose-500/20 to-pink-500/20', iconColor: 'text-rose-600' }
+          ]
+        },
+        jasmine: {
+          species: 'Jasminum officinale (Jasmine)',
+          colors: ['#FFFFFF', '#FFF8DC', '#F5F5DC', '#FFFFE0', '#FFFAF0'],
+          compounds: [
+            { name: 'Benzyl Acetate', value: 35.6 },
+            { name: 'Linalool', value: 27.4 },
+            { name: 'Indole', value: 18.9 },
+            { name: 'Jasmone', value: 12.3 }
+          ],
+          notes: { top: 'Fresh / Green', middle: 'Jasmine / Sweet', base: 'Honey / Balsamic' },
+          story: 'Moon-blooming elegance, this jasmine once perfumed royal gardens and sacred temples. Digitally revived, its white petals remember evening prayers, wedding garlands, and the night air filled with intoxicating fragrance.',
+          usesBefore: [
+            { title: 'Jasmine Tea', icon: Leaf, description: 'Infuse fresh jasmine flowers with green tea for a delicate, fragrant beverage that calms nerves and aids digestion.', product: 'Jasmine Tea', color: 'from-green-500/20 to-white/20', iconColor: 'text-green-600' },
+            { title: 'Hair Conditioning', icon: Scissors, description: 'This flower can use for hair! Rinse hair with fresh jasmine-infused water for soft, shiny, and naturally fragrant hair.', product: 'Jasmine Hair Rinse', color: 'from-blue-500/20 to-green-500/20', iconColor: 'text-blue-600' },
+            { title: 'Aromatherapy Oil', icon: Droplets, description: 'Steep fresh jasmine in carrier oils overnight to create aromatic massage oils that reduce anxiety and promote relaxation.', product: 'Jasmine Massage Oil', color: 'from-white/20 to-green-500/20', iconColor: 'text-slate-600' },
+            { title: 'Perfume Base', icon: Sparkles, description: 'Use fresh jasmine petals as a natural perfume base. The intoxicating scent lasts for hours and promotes well-being.', product: 'Jasmine Perfume', color: 'from-purple-500/20 to-pink-500/20', iconColor: 'text-purple-600' }
+          ],
+          usesAfter: [
+            { title: 'Dried Jasmine Hair Treatment', icon: Scissors, description: 'This flower can use for hair! Steep dried jasmine flowers for a conditioning hair treatment that adds shine and natural fragrance.', product: 'Jasmine Hair Treatment', color: 'from-green-500/20 to-blue-500/20', iconColor: 'text-green-600' },
+            { title: 'Essential Oil Extraction', icon: Beaker, description: 'Extract precious jasmine essential oil from dried flowers for aromatherapy, perfumery, and luxury skincare products.', product: 'Jasmine Essential Oil', color: 'from-purple-500/20 to-pink-500/20', iconColor: 'text-purple-600' },
+            { title: 'Herbal Tea Blend', icon: Leaf, description: 'Create aromatic tea blends with dried jasmine flowers. Promotes relaxation, better sleep, and stress relief.', product: 'Jasmine Herbal Tea', color: 'from-green-500/20 to-white/20', iconColor: 'text-green-600' },
+            { title: 'Potpourri', icon: Package, description: 'Mix dried jasmine flowers with other botanicals to create luxurious, long-lasting potpourri that fills rooms with delicate fragrance.', product: 'Jasmine Potpourri', color: 'from-white/20 to-green-500/20', iconColor: 'text-slate-600' },
+            { title: 'Skin Brightening Mask', icon: Droplets, description: 'Grind dried jasmine into powder and mix with honey for a skin-brightening face mask that improves complexion.', product: 'Jasmine Face Mask', color: 'from-pink-500/20 to-white/20', iconColor: 'text-pink-600' },
+            { title: 'Scented Candles', icon: Candle, description: 'Embed dried jasmine flowers into candles for elegant, naturally scented candles that create a romantic, calming ambiance.', product: 'Jasmine Candles', color: 'from-purple-500/20 to-pink-500/20', iconColor: 'text-purple-600' }
+          ]
+        }
+      };
+
+      // Function to detect flower species (for demo, uses hash of image)
+      const detectFlowerSpecies = (imageData) => {
+        // In a real app, this would use AI/ML model
+        // For demo, we'll use a simple hash-based selection
+        const flowers = Object.keys(flowerDatabase);
+        if (!imageData) return flowers[0]; // Default to rose
+        
+        // Create simple hash from image
+        let hash = 0;
+        if (typeof imageData === 'string') {
+          for (let i = 0; i < imageData.length && i < 100; i++) {
+            hash = ((hash << 5) - hash) + imageData.charCodeAt(i);
+            hash = hash & hash;
+          }
+        }
+        const index = Math.abs(hash) % flowers.length;
+        return flowers[index];
+      };
+
+      // Get flower data based on detected species
+      const getFlowerData = (speciesKey) => {
+        return flowerDatabase[speciesKey] || flowerDatabase.rose;
+      };
+
+      const FeatureCard = ({ icon: Icon, title, desc }) => (
+        <div className="glass rounded-3xl p-4 shadow-md border border-white/60 hover:-translate-y-1 transition-all duration-300">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="p-2 rounded-2xl bg-gradient-to-br from-primary-500/15 to-plum/15 text-primary-600">
+              <Icon size={22} />
+            </div>
+            <p className="font-semibold text-lg">{title}</p>
+          </div>
+          <p className="text-sm text-slate-600 leading-relaxed">{desc}</p>
+        </div>
+      );
+
+      const ColorSwatch = ({ color }) => (
+        <div className="flex flex-col gap-2 items-start">
+          <div className="w-full h-14 rounded-2xl shadow-inner border border-white/60" style={{ background: color }}></div>
+          <span className="text-xs font-semibold tracking-wide text-slate-700">{color}</span>
+        </div>
+      );
+
+      const CompoundBar = ({ name, value }) => (
+        <div className="space-y-2">
+          <div className="flex justify-between text-sm font-medium">
+            <span>{name}</span>
+            <span className="text-primary-600">{value}%</span>
+          </div>
+          <div className="h-3 bg-white/70 rounded-full overflow-hidden border border-white/60 shadow-inner">
+            <div
+              className="h-full bg-gradient-to-r from-primary-500 via-plum to-ink rounded-full shadow-glow"
+              style={{ width: `${value}%` }}
+            ></div>
+          </div>
+        </div>
+      );
+
+      const ActionButton = ({ icon: Icon, label, onClick, variant = 'primary' }) => {
+        const base =
+          'flex items-center justify-center gap-2 px-4 py-3 rounded-2xl text-sm font-semibold transition-all duration-200';
+        const variants = {
+          primary:
+            'bg-gradient-to-r from-primary-500 to-plum text-white shadow-glow hover:shadow-lg hover:shadow-primary-500/30',
+          ghost:
+            'border border-white/70 bg-white/70 text-slate-800 hover:-translate-y-0.5 hover:shadow-md'
+        };
+        return (
+          <button onClick={onClick} className={`${base} ${variants[variant]}`}>
+            <Icon size={18} />
+            {label}
+          </button>
+        );
+      };
+
+      const ProductCard = ({ use, type }) => {
+        const Icon = use.icon;
+        return (
+          <div className="glass rounded-3xl p-5 border border-white/60 shadow-md hover:-translate-y-1 hover:shadow-lg transition-all duration-300">
+            <div className="flex items-start gap-4 mb-4">
+              <div className={`p-3 rounded-2xl bg-gradient-to-br ${use.color} ${use.iconColor} flex-shrink-0 shadow-md`}>
+                <Icon size={24} />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  <h3 className="font-semibold text-lg">{use.title}</h3>
+                  {use.title.includes('Hair Dye') && (
+                    <span className="px-2 py-0.5 text-xs bg-purple-500/20 text-purple-700 rounded-full font-semibold">Popular</span>
+                  )}
+                  {type === 'before' && (
+                    <span className="px-2 py-0.5 text-xs bg-green-500/20 text-green-700 rounded-full font-semibold">Fresh</span>
+                  )}
+                  {type === 'after' && (
+                    <span className="px-2 py-0.5 text-xs bg-amber-500/20 text-amber-700 rounded-full font-semibold">Dried</span>
+                  )}
+                </div>
+                <p className="text-sm text-slate-600 leading-relaxed">{use.description}</p>
+              </div>
+            </div>
+            <div className={`relative overflow-hidden rounded-2xl h-36 bg-gradient-to-br ${use.color} border border-white/70 shadow-inner`}>
+              <div className="absolute inset-0 flex items-center justify-center backdrop-blur-sm bg-white/30">
+                <div className="text-center p-4">
+                  <div className="mb-2 inline-flex items-center justify-center w-16 h-16 rounded-full bg-white/80 shadow-lg">
+                    <Icon size={32} className={use.iconColor} />
+                  </div>
+                  <p className="text-sm font-bold text-slate-800 mt-2">{use.product}</p>
+                  <p className="text-xs text-slate-600 mt-1 font-medium">{type === 'before' ? '✨ Fresh Flower Product' : '🍂 Dried Flower Product'}</p>
+                </div>
+              </div>
+              <div className="absolute top-2 right-2 px-2 py-1 rounded-full bg-white/90 backdrop-blur-sm text-xs font-semibold text-slate-700 shadow-sm">
+                DIY
+              </div>
+            </div>
+          </div>
+        );
+      };
+
+      // Function to create wasted/dried flower effect
+      const createWastedImage = (imageSrc, callback) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          
+          ctx.drawImage(img, 0, 0);
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const data = imageData.data;
+          
+          // Apply wasted/dried effects: desaturate, darken, add brown tones
+          for (let i = 0; i < data.length; i += 4) {
+            const r = data[i];
+            const g = data[i + 1];
+            const b = data[i + 2];
+            
+            // Desaturate
+            const gray = r * 0.299 + g * 0.587 + b * 0.114;
+            const desaturation = 0.6; // 60% desaturated
+            
+            // Darken
+            const darken = 0.75; // 75% of original brightness
+            
+            // Add brown/dried tones
+            const brownTint = 0.15; // 15% brown tint
+            
+            data[i] = Math.min(255, (r * (1 - desaturation) + gray * desaturation) * darken + 60 * brownTint);
+            data[i + 1] = Math.min(255, (g * (1 - desaturation) + gray * desaturation) * darken + 45 * brownTint);
+            data[i + 2] = Math.min(255, (b * (1 - desaturation) + gray * desaturation) * darken + 30 * brownTint);
+          }
+          
+          ctx.putImageData(imageData, 0, 0);
+          callback(canvas.toDataURL());
+        };
+        img.src = imageSrc;
+      };
+
+      const App = () => {
+        const fileRef = useRef(null);
+        const [phase, setPhase] = useState('upload');
+        const [beforeImage, setBeforeImage] = useState(null);
+        const [afterImage, setAfterImage] = useState(null);
+        const [wastedImage, setWastedImage] = useState(null);
+        const [fileName, setFileName] = useState('');
+        const [currentFlowerKey, setCurrentFlowerKey] = useState('rose');
+        const [mockData, setMockData] = useState(flowerDatabase.rose);
+
+        const reset = () => {
+          setPhase('upload');
+          setBeforeImage(null);
+          setAfterImage(null);
+          setWastedImage(null);
+          setFileName('');
+          setCurrentFlowerKey('rose');
+          setMockData(flowerDatabase.rose);
+          if (fileRef.current) {
+            fileRef.current.value = '';
+          }
+        };
+
+        const handleUpload = (e) => {
+          const file = e.target.files?.[0];
+          if (!file) return;
+          const reader = new FileReader();
+          setFileName(file.name);
+          reader.onloadend = () => {
+            const base64 = reader.result;
+            setBeforeImage(base64);
+            
+            // Detect flower species and set data
+            const detectedSpecies = detectFlowerSpecies(base64);
+            const flowerData = getFlowerData(detectedSpecies);
+            setCurrentFlowerKey(detectedSpecies);
+            setMockData(flowerData);
+            
+            setPhase('processing');
+            setTimeout(() => {
+              setAfterImage(base64);
+              // Create wasted version
+              createWastedImage(base64, (wasted) => {
+                setWastedImage(wasted);
+              });
+              setPhase('results');
+            }, 3000);
+          };
+          reader.readAsDataURL(file);
+        };
+
+        const downloadResult = () => {
+          if (!afterImage) return;
+          const link = document.createElement('a');
+          link.href = afterImage;
+          link.download = fileName || 'restored-flower.png';
+          link.click();
+        };
+
+        const downloadUsesGuide = () => {
+          const speciesName = mockData.species.split('(')[0].trim();
+          let content = `FLOWER USES GUIDE: ${mockData.species}\n`;
+          content += '='.repeat(60) + '\n\n';
+          
+          content += '🌹 BEFORE WASTED (Fresh Flower Uses)\n';
+          content += '-'.repeat(60) + '\n\n';
+          mockData.usesBefore.forEach((use, idx) => {
+            content += `${idx + 1}. ${use.title}\n`;
+            content += `   ${use.description}\n`;
+            content += `   Product: ${use.product}\n\n`;
+          });
+          
+          content += '\n🍂 AFTER WASTED (Dried Flower Uses)\n';
+          content += '-'.repeat(60) + '\n\n';
+          mockData.usesAfter.forEach((use, idx) => {
+            content += `${idx + 1}. ${use.title}\n`;
+            content += `   ${use.description}\n`;
+            content += `   Product: ${use.product}\n\n`;
+          });
+          
+          content += '\n📊 FLOWER PROPERTIES\n';
+          content += '-'.repeat(60) + '\n';
+          content += `Color Palette: ${mockData.colors.join(', ')}\n`;
+          content += `Top Note: ${mockData.notes.top}\n`;
+          content += `Middle Note: ${mockData.notes.middle}\n`;
+          content += `Base Note: ${mockData.notes.base}\n`;
+          
+          content += '\n' + '='.repeat(60) + '\n';
+          content += `Generated by AI Flower Genome Reconstructor\n`;
+          content += `Species: ${mockData.species}\n`;
+          content += `Date: ${new Date().toLocaleDateString()}\n`;
+          
+          const blob = new Blob([content], { type: 'text/plain' });
+          const link = document.createElement('a');
+          link.href = URL.createObjectURL(blob);
+          link.download = `${speciesName.toLowerCase().replace(/\s+/g, '-')}-uses-guide.txt`;
+          link.click();
+          URL.revokeObjectURL(link.href);
+        };
+
+        const handleNewUpload = () => {
+          fileRef.current?.click();
+        };
+
+        return (
+          <div className="max-w-6xl mx-auto px-4 pb-16">
+            <header className="sticky top-4 z-10">
+              <div className="glass shadow-glow rounded-3xl px-5 py-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-primary-500 to-plum flex items-center justify-center text-white shadow-lg">
+                    <Flower2 size={26} />
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.25em] text-slate-600">Genomic Lab</p>
+                    <p className="text-xl font-semibold">AI Flower Genome Reconstructor</p>
+                  </div>
+                </div>
+                <ActionButton icon={RefreshCcw} label="New Upload" onClick={handleNewUpload} variant="ghost" />
+              </div>
+            </header>
+
+            <main className="mt-10 space-y-8">
+              <section className="glass rounded-4xl p-6 shadow-lg border border-white/60">
+                <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
+                  <div className="flex-1">
+                    <p className="text-sm text-slate-600 mb-2">Digital Restoration Lab</p>
+                    <h1 className="text-4xl md:text-5xl font-bold leading-tight mb-4">
+                      Reconstruct wasted flowers with <span className="gradient-text">genomic AI</span>
+                    </h1>
+                    <p className="text-lg text-slate-700 max-w-2xl">
+                      Upload a dried or wasted bloom and watch our model recover its spectrum, scent, and story with lab-grade
+                      precision.
+                    </p>
+                  </div>
+                  <div className="w-full md:w-72">
+                    <div className="glass rounded-3xl p-4 border border-white/70 shadow-md">
+                      <div className="text-xs uppercase tracking-[0.2em] text-slate-600 mb-2">Upload flower image</div>
+                      <div
+                        className="group cursor-pointer border border-dashed border-primary-500/50 rounded-2xl p-4 flex flex-col items-center justify-center bg-white/60 hover:bg-white/80 transition"
+                        onClick={handleNewUpload}
+                      >
+                        <div className="h-14 w-14 rounded-full bg-gradient-to-br from-primary-500/20 to-plum/20 flex items-center justify-center text-primary-600 mb-3">
+                          <Upload size={24} />
+                        </div>
+                        <p className="font-semibold text-sm mb-1">Click to upload</p>
+                        <p className="text-xs text-slate-600">JPEG or PNG, up to 10MB</p>
+                        {fileName && <p className="mt-2 text-xs text-primary-600 font-medium">{fileName}</p>}
+                      </div>
+                      <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleUpload} />
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        <span className="px-3 py-1 text-xs bg-primary-500/10 text-primary-700 rounded-full">Auto 3s processing</span>
+                        <span className="px-3 py-1 text-xs bg-emerald-500/10 text-emerald-700 rounded-full">RESTORED badge</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <section className="grid md:grid-cols-4 gap-4">
+                <FeatureCard icon={Sparkles} title="Spectral Bloom" desc="AI rebuilds pigment pathways to recover true petal tones." />
+                <FeatureCard icon={Droplets} title="Fragrance Genome" desc="Chemical signatures mapped with actionable compound ratios." />
+                <FeatureCard icon={Palette} title="Color Memory" desc="Extracted palette with hex-perfect swatches ready for design." />
+                <FeatureCard icon={Beaker} title="Story Engine" desc="Narrative generator preserves heritage, terroir, and lore." />
+              </section>
+
+              <section className="glass rounded-4xl p-8 border border-white/60 shadow-lg">
+                <div className="text-center mb-8">
+                  <div className="inline-flex items-center justify-center gap-3 mb-3">
+                    <Sprout className="text-primary-600" size={32} />
+                    <h2 className="text-3xl md:text-4xl font-bold gradient-text">Sustainable Uses of Wasted Flowers</h2>
+                    <Sprout className="text-primary-600" size={32} />
+                  </div>
+                  <p className="text-lg text-slate-700 max-w-3xl mx-auto">
+                    Discover eco-friendly ways to repurpose wasted and dried flowers. Transform beauty into sustainability.
+                  </p>
+                </div>
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="glass rounded-3xl p-5 border border-white/60 shadow-md hover:-translate-y-1 transition-all duration-300">
+                    <div className="flex items-start gap-4">
+                      <div className="p-3 rounded-2xl bg-gradient-to-br from-green-500/20 to-emerald-500/20 text-green-600 flex-shrink-0">
+                        <Sprout size={24} />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-lg mb-2">Natural Air Fresheners</h3>
+                        <p className="text-sm text-slate-600 leading-relaxed">
+                          Combine dried petals with essential oils to create natural air fresheners. Infuse your space with pleasant, chemical-free aromas.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="glass rounded-3xl p-5 border border-white/60 shadow-md hover:-translate-y-1 transition-all duration-300">
+                    <div className="flex items-start gap-4">
+                      <div className="p-3 rounded-2xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 text-amber-600 flex-shrink-0">
+                        <Recycle size={24} />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-lg mb-2">Organic Compost</h3>
+                        <p className="text-sm text-slate-600 leading-relaxed">
+                          Add wilted flowers to compost bins to enrich soil with nutrients. Promotes healthy plant growth naturally.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="glass rounded-3xl p-5 border border-white/60 shadow-md hover:-translate-y-1 transition-all duration-300">
+                    <div className="flex items-start gap-4">
+                      <div className="p-3 rounded-2xl bg-gradient-to-br from-primary-500/20 to-plum/20 text-primary-600 flex-shrink-0">
+                        <Palette size={24} />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-lg mb-2">Natural Dyes</h3>
+                        <p className="text-sm text-slate-600 leading-relaxed">
+                          Extract pigments from hibiscus, roses, and marigolds to dye fabrics, paper, or candles. Eco-friendly alternative to synthetic dyes.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="glass rounded-3xl p-5 border border-white/60 shadow-md hover:-translate-y-1 transition-all duration-300">
+                    <div className="flex items-start gap-4">
+                      <div className="p-3 rounded-2xl bg-gradient-to-br from-pink-500/20 to-rose-500/20 text-pink-600 flex-shrink-0">
+                        <Droplets size={24} />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-lg mb-2">Floral Skincare</h3>
+                        <p className="text-sm text-slate-600 leading-relaxed">
+                          Infuse dried petals into oils to create natural lotions and balms. Hydrating skincare with botanical benefits.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="glass rounded-3xl p-5 border border-white/60 shadow-md hover:-translate-y-1 transition-all duration-300">
+                    <div className="flex items-start gap-4">
+                      <div className="p-3 rounded-2xl bg-gradient-to-br from-purple-500/20 to-indigo-500/20 text-purple-600 flex-shrink-0">
+                        <Candle size={24} />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-lg mb-2">Scented Candles</h3>
+                        <p className="text-sm text-slate-600 leading-relaxed">
+                          Embed dried petals into homemade candles for decorative appeal and subtle fragrances when heated.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="glass rounded-3xl p-5 border border-white/60 shadow-md hover:-translate-y-1 transition-all duration-300">
+                    <div className="flex items-start gap-4">
+                      <div className="p-3 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 text-emerald-600 flex-shrink-0">
+                        <Leaf size={24} />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-lg mb-2">Biodegradable Confetti</h3>
+                        <p className="text-sm text-slate-600 leading-relaxed">
+                          Use dried petals as eco-friendly confetti for celebrations. Reduces environmental impact compared to plastic.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="glass rounded-3xl p-5 border border-white/60 shadow-md hover:-translate-y-1 transition-all duration-300">
+                    <div className="flex items-start gap-4">
+                      <div className="p-3 rounded-2xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 text-blue-600 flex-shrink-0">
+                        <Package size={24} />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-lg mb-2">Floral Paper</h3>
+                        <p className="text-sm text-slate-600 leading-relaxed">
+                          Create beautiful floral-infused stationery by recycling flowers and paper. Add unique personal touch to correspondence.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="glass rounded-3xl p-5 border border-white/60 shadow-md hover:-translate-y-1 transition-all duration-300">
+                    <div className="flex items-start gap-4">
+                      <div className="p-3 rounded-2xl bg-gradient-to-br from-rose-500/20 to-pink-500/20 text-rose-600 flex-shrink-0">
+                        <Droplets size={24} />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-lg mb-2">Edible Syrups & Teas</h3>
+                        <p className="text-sm text-slate-600 leading-relaxed">
+                          Use edible flowers like hibiscus and lavender to make syrups for cocktails or brew into healthful teas.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="glass rounded-3xl p-5 border border-white/60 shadow-md hover:-translate-y-1 transition-all duration-300">
+                    <div className="flex items-start gap-4">
+                      <div className="p-3 rounded-2xl bg-gradient-to-br from-violet-500/20 to-purple-500/20 text-violet-600 flex-shrink-0">
+                        <Wand2 size={24} />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-lg mb-2">Pressed Flower Art</h3>
+                        <p className="text-sm text-slate-600 leading-relaxed">
+                          Press flowers to create decorative art pieces like framed artwork or bookmarks. Preserve beauty in unique forms.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-6 p-4 glass rounded-2xl border border-emerald-500/30 bg-emerald-500/5">
+                  <p className="text-sm text-slate-700 text-center">
+                    <span className="font-semibold text-emerald-700">💡 Tip:</span> Before composting or reusing, remove non-organic elements like wires, ribbons, or synthetic materials for best results.
+                  </p>
+                </div>
+              </section>
+
+              {phase === 'processing' && (
+                <section className="glass rounded-3xl p-8 text-center border border-white/60 shadow-md">
+                  <div className="mx-auto w-20 h-20 rounded-full border-4 border-primary-500/30 border-t-primary-500 animate-spin mb-4"></div>
+                  <p className="text-xl font-semibold mb-2">Reconstructing genome layers…</p>
+                  <p className="text-slate-600">Analyzing pigments, volatiles, and olfactory memory (3s)</p>
+                </section>
+              )}
+
+              {phase === 'results' && (
+                <section className="space-y-6">
+                  <div className="grid lg:grid-cols-5 gap-4">
+                    <div className="lg:col-span-3 glass rounded-3xl p-5 border border-white/60 shadow-md">
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.2em] text-slate-600">Before / After / Wasted</p>
+                          <h3 className="text-2xl font-semibold">Digital restoration & Waste simulation</h3>
+                        </div>
+                        <div className="px-3 py-1 text-xs rounded-full bg-emerald-500/15 text-emerald-700 font-semibold">RESTORED</div>
+                      </div>
+                      <div className="grid sm:grid-cols-3 gap-4">
+                        <div className="relative overflow-hidden rounded-2xl border border-white/70 bg-white/70">
+                          <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-transparent to-white/30 z-10 pointer-events-none"></div>
+                          {beforeImage ? (
+                            <img src={beforeImage} alt="Before" className="w-full h-64 object-cover filter grayscale" />
+                          ) : (
+                            <div className="h-64 flex items-center justify-center text-slate-500 text-xs">Awaiting upload</div>
+                          )}
+                          <div className="absolute top-3 left-3 px-3 py-1 rounded-full bg-black/60 text-white text-xs flex items-center gap-2 z-20">
+                            <ArrowLeftRight size={14} />
+                            Before
+                          </div>
+                        </div>
+                        <div className="relative overflow-hidden rounded-2xl border border-white/70 bg-white/80 shadow-glow">
+                          <div className="absolute inset-0 bg-gradient-to-b from-primary-500/10 via-transparent to-white z-10 pointer-events-none"></div>
+                          {afterImage ? (
+                            <img src={afterImage} alt="After" className="w-full h-64 object-cover" />
+                          ) : (
+                            <div className="h-64 flex items-center justify-center text-slate-500 text-xs">Processing</div>
+                          )}
+                          <div className="absolute top-3 left-3 px-3 py-1 rounded-full bg-primary-500 text-white text-xs flex items-center gap-2 z-20">
+                            <Sparkles size={14} />
+                            Restored
+                          </div>
+                        </div>
+                        <div className="relative overflow-hidden rounded-2xl border border-white/70 bg-white/70">
+                          <div className="absolute inset-0 bg-gradient-to-b from-amber-900/30 via-transparent to-brown-900/30 z-10 pointer-events-none"></div>
+                          {wastedImage ? (
+                            <img src={wastedImage} alt="Wasted" className="w-full h-64 object-cover" />
+                          ) : (
+                            <div className="h-64 flex items-center justify-center text-slate-500 text-xs">Processing</div>
+                          )}
+                          <div className="absolute top-3 left-3 px-3 py-1 rounded-full bg-amber-700 text-white text-xs flex items-center gap-2 z-20">
+                            <Leaf size={14} />
+                            After Wasted
+                          </div>
+                        </div>
+                      </div>
+                      <div className="mt-4 p-4 glass rounded-2xl border border-amber-500/30 bg-amber-500/5">
+                        <p className="text-xs text-slate-700 leading-relaxed">
+                          <span className="font-semibold text-amber-700">💡 Waste Simulation:</span> The "After Wasted" image shows how this flower will look when dried and wasted. This helps you understand the transformation and plan sustainable uses for your flowers.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="lg:col-span-2 glass rounded-3xl p-5 border border-white/60 shadow-md space-y-4">
+                      <div className="flex items-center gap-3">
+                        <Scan size={24} className="text-primary-600" />
+                        <div className="flex-1">
+                          <p className="text-xs uppercase tracking-[0.2em] text-slate-600">Species ID</p>
+                          <p className="text-xl font-semibold">{mockData.species}</p>
+                          <p className="text-xs text-slate-500 mt-1">Database supports 6+ flower species</p>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-5 gap-2">
+                        {mockData.colors.map((c) => (
+                          <ColorSwatch key={c} color={c} />
+                        ))}
+                      </div>
+                      <div className="glass rounded-2xl p-4 border border-white/60">
+                        <p className="text-xs uppercase tracking-[0.2em] text-slate-600 mb-3">Scent Notes</p>
+                        <div className="grid grid-cols-3 gap-3 text-sm">
+                          <div>
+                            <p className="text-slate-500">Top</p>
+                            <p className="font-semibold">{mockData.notes.top}</p>
+                          </div>
+                          <div>
+                            <p className="text-slate-500">Middle</p>
+                            <p className="font-semibold">{mockData.notes.middle}</p>
+                          </div>
+                          <div>
+                            <p className="text-slate-500">Base</p>
+                            <p className="font-semibold">{mockData.notes.base}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid lg:grid-cols-2 gap-4">
+                    <div className="glass rounded-3xl p-6 border border-white/60 shadow-md space-y-4">
+                      <div className="flex items-center gap-3">
+                        <Droplets size={24} className="text-primary-600" />
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.2em] text-slate-600">Digital Fragrance Signature</p>
+                          <h3 className="text-2xl font-semibold">Compound distribution</h3>
+                        </div>
+                      </div>
+                      <div className="space-y-3">
+                        {mockData.compounds.map((compound) => (
+                          <CompoundBar key={compound.name} name={compound.name} value={compound.value} />
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="relative overflow-hidden rounded-3xl p-6 shadow-md border border-white/60 bg-gradient-to-br from-primary-500/15 via-white to-plum/10">
+                      <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-primary-500/10 blur-3xl"></div>
+                      <div className="flex items-center gap-3 mb-3 relative z-10">
+                        <Wand2 size={24} className="text-primary-600" />
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.2em] text-slate-600">Memory Story</p>
+                          <h3 className="text-2xl font-semibold text-ink">Heritage</h3>
+                        </div>
+                      </div>
+                      <p className="text-slate-800 leading-relaxed text-lg relative z-10">{mockData.story}</p>
+                    </div>
+                  </div>
+
+                  <div className="glass rounded-4xl p-8 border border-white/60 shadow-lg">
+                    <div className="flex items-center justify-between mb-6">
+                      <div>
+                        <div className="flex items-center gap-3 mb-2">
+                          <Flower2 size={32} className="text-primary-600" />
+                          <h2 className="text-3xl font-bold gradient-text">Personalized Uses for {mockData.species.split('(')[0].trim()}</h2>
+                        </div>
+                        <p className="text-slate-600">Discover what you can make with this flower before and after it's wasted</p>
+                      </div>
+                      <ActionButton
+                        icon={Download}
+                        label="Download Uses Guide"
+                        onClick={downloadUsesGuide}
+                        variant="ghost"
+                      />
+                    </div>
+
+                    <div className="mb-8">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="h-10 w-1 rounded-full bg-gradient-to-b from-green-500 to-emerald-500"></div>
+                        <h3 className="text-2xl font-semibold text-slate-800">🌹 Before Wasted (Fresh Flower Uses)</h3>
+                      </div>
+                      <div className="grid md:grid-cols-2 gap-4">
+                        {mockData.usesBefore.map((use, idx) => (
+                          <ProductCard key={idx} use={use} type="before" />
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="h-10 w-1 rounded-full bg-gradient-to-b from-amber-500 to-orange-500"></div>
+                        <h3 className="text-2xl font-semibold text-slate-800">🍂 After Wasted (Dried Flower Uses)</h3>
+                      </div>
+                      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {mockData.usesAfter.map((use, idx) => (
+                          <ProductCard key={idx} use={use} type="after" />
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="mt-6 p-5 glass rounded-2xl border border-primary-500/30 bg-gradient-to-r from-primary-500/5 to-plum/5">
+                      <div className="flex items-start gap-3">
+                        <Sparkles size={24} className="text-primary-600 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="font-semibold text-lg mb-1 text-slate-800">Satisfaction Guaranteed</p>
+                          <p className="text-sm text-slate-700 leading-relaxed">
+                            These personalized suggestions are tailored specifically for <strong>{mockData.species}</strong>. 
+                            Each use has been validated based on this flower's unique chemical composition, color palette, and fragrance profile. 
+                            You'll find practical, sustainable ways to maximize the value of your flowers at every stage of their lifecycle.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="glass rounded-3xl p-5 border border-white/60 shadow-md flex flex-wrap items-center gap-3 justify-between">
+                    <div className="flex items-center gap-3">
+                      <Sparkles size={24} className="text-primary-600" />
+                      <div>
+                        <p className="text-sm text-slate-600">Ready to export</p>
+                        <p className="text-lg font-semibold">Download assets or generate derived products</p>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <ActionButton icon={Download} label="Download result" onClick={downloadResult} />
+                      <ActionButton icon={Download} label="Download Uses Guide" onClick={downloadUsesGuide} variant="ghost" />
+                      <ActionButton
+                        icon={Flower2}
+                        label="Generate products"
+                        onClick={() => alert('Product generation simulated for demo purposes.')}
+                        variant="ghost"
+                      />
+                      <ActionButton icon={RefreshCcw} label="Upload another" onClick={reset} variant="ghost" />
+                    </div>
+                  </div>
+                </section>
+              )}
+
+              {phase === 'upload' && (
+                <section className="glass rounded-3xl p-8 border border-white/60 shadow-md text-center">
+                  <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-500 to-plum flex items-center justify-center text-white mb-4 shadow-glow">
+                    <Upload size={32} />
+                  </div>
+                  <p className="text-2xl font-semibold mb-2">Upload a wasted or dried bloom</p>
+                  <p className="text-slate-600 mb-6 max-w-2xl mx-auto">
+                    The AI will auto-process the image, reconstruct colors, map fragrance compounds, extract palettes, and craft a
+                    memory story. Hover over cards to feel the micro-interactions.
+                  </p>
+                  <div className="flex justify-center">
+                    <ActionButton icon={Upload} label="Choose image" onClick={handleNewUpload} />
+                  </div>
+                </section>
+              )}
+            </main>
+
+            <footer className="mt-10 mb-6 text-center text-slate-600 text-sm">
+              Built with React, Tailwind, and Lucide. Demo-grade reconstruction for AI Flower Genome Reconstructor.
+            </footer>
+          </div>
+        );
+      };
+
+      const rootEl = document.getElementById('root');
+      const root = createRoot(rootEl);
+      root.render(<App />);
+    </script>
+  </body>
+</html>
